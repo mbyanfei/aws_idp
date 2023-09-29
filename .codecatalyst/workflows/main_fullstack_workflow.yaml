@@ -1,0 +1,57 @@
+Name: main_fullstack_workflow
+SchemaVersion: "1.0"
+Triggers:
+  - Type: PUSH
+    Branches:
+      - main
+Actions:
+  BuildAndPackage:
+    Identifier: aws/build@v1
+    Inputs:
+      Sources:
+        - WorkflowSource
+    Outputs:
+      AutoDiscoverReports:
+        Enabled: false
+        ReportNamePrefix: rpt
+      Artifacts:
+        - Name: build_result
+          Files:
+            - "**/*"
+    Configuration:
+      Steps:
+        - Run: echo Build started on `date`
+        - Run: cd $ACTION_BUILD_SOURCE_PATH_WorkflowSource/
+        - Run: python -m pip install -r requirements.txt
+  CDKBootstrapAction:
+    Identifier: aws/cdk-bootstrap@v1
+    Inputs:
+      Sources:
+        - WorkflowSource
+    Environment:
+      Name: Default
+      Connections:
+        - Name: "344791876551"
+          Role: CodeCatalystWorkflowDevelopmentRole-yan_cc_space
+    Configuration:
+      Region: us-east-2
+  CDKDeploy:
+    Identifier: aws/cdk-deploy@v1
+    Inputs:
+      Sources:
+        - WorkflowSource
+    Environment:
+      Name: Default
+      Connections:
+        - Name: "344791876551"
+          Role: CodeCatalystWorkflowDevelopmentRole-yan_cc_space
+    DependsOn:
+      - BuildAndPackage
+      - CDKBootstrapAction
+    Configuration:
+      StackName: IDP-Textract-Queries2rfr7
+      Region: us-east-2
+      Context: '{"stack_name":"IDP-Textract-Queries2rfr7"}'
+Compute:
+  Type: EC2
+  Fleet: Linux.x86-64.Large
